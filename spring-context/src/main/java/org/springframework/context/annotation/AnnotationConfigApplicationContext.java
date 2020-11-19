@@ -53,8 +53,14 @@ import org.springframework.util.Assert;
  */
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
 
+	/**
+	 * 用来注册bean
+	 */
 	private final AnnotatedBeanDefinitionReader reader;
 
+	/**
+	 * 用来扫描classpath中的bean，也可以用来注册beanDefinition
+	 */
 	private final ClassPathBeanDefinitionScanner scanner;
 
 
@@ -78,13 +84,21 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	}
 
 	/**
+	 * 我们调用子类构造器的时候，如果没有显示调用父类构造器，则默认会调用父类的无参构造器。
+	 * 而AnnotationConfigApplicationContext的直接父类是GenericApplicationContext，
+	 * 它会去创建一个DefaultListableBeanFactory实例，
+	 * TODO 至于DefaultListableBeanFactory有什么用，后面再去理解
+	 *
 	 * Create a new AnnotationConfigApplicationContext, deriving bean definitions
 	 * from the given component classes and automatically refreshing the context.
 	 * @param componentClasses one or more component classes &mdash; for example,
 	 * {@link Configuration @Configuration} classes
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
+		// 无参构造器会去创建一个可以用于注册bean的reader
+		// 和一个可以用来扫描classpath下的bean和注册BeanDefinition的scanner
 		this();
+		// register内部就是使用上面创建的reader去注册componentClasses的
 		register(componentClasses);
 		refresh();
 	}

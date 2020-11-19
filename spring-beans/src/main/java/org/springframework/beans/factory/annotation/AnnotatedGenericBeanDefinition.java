@@ -50,11 +50,14 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 
 
 	/**
+	 * 这个构造方法创建一个对象，这个对象保存了我们指定的类型，以及可以获取到租用在该类型上面的注解的信息
 	 * Create a new AnnotatedGenericBeanDefinition for the given bean class.
 	 * @param beanClass the loaded bean class
 	 */
 	public AnnotatedGenericBeanDefinition(Class<?> beanClass) {
+		// 这里只是把这个类型进行保存
 		setBeanClass(beanClass);
+		// 调用introspect方法，返回的这个对象可以让我们轻易的获取到指定类型上的注解信息
 		this.metadata = AnnotationMetadata.introspect(beanClass);
 	}
 

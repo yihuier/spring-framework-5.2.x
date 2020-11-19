@@ -250,17 +250,28 @@ public class AnnotatedBeanDefinitionReader {
 			@Nullable Class<? extends Annotation>[] qualifiers, @Nullable Supplier<T> supplier,
 			@Nullable BeanDefinitionCustomizer[] customizers) {
 
+		// 我们可以认为这里的abd对象，知道了我们指定的类型（beanClass）以及作用在该类型上面的注解的信息
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(beanClass);
+
+		// 如果beanClass上没有使用Conditional注解，那么shouldSkip会返回false，所以继续往下执行
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
 		}
 
+		// TODO 暂时不知道作用
 		abd.setInstanceSupplier(supplier);
+
+		// 这里获取beanClass的scope，并存到AnnotatedGenericBeanDefinition中
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
 		abd.setScope(scopeMetadata.getScopeName());
+
+		// 这里就是生成beanName
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
 
+		// 处理Lazy、Primary、DependsOn、Role、Description这些注解，该保存值的保存值，该放空的放空
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+
+		// 如果从new AnnotationConfigApplicationContext()这条线下来qualifiers为null、customizers也为null
 		if (qualifiers != null) {
 			for (Class<? extends Annotation> qualifier : qualifiers) {
 				if (Primary.class == qualifier) {
@@ -280,8 +291,11 @@ public class AnnotatedBeanDefinitionReader {
 			}
 		}
 
+		// 将beanName和abd关联起来，保存到一起
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+		// TODO 这个据说复杂一点，暂时不深入
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+		// 注册BeanDefinition
 		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 	}
 

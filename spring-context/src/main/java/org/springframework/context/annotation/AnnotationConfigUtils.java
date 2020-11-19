@@ -235,10 +235,14 @@ public abstract class AnnotationConfigUtils {
 	}
 
 	static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata) {
+		// 获取lazy信息，并存到AnnotatedBeanDefinition中
 		AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
 		if (lazy != null) {
 			abd.setLazyInit(lazy.getBoolean("value"));
 		}
+		// TODO 这里重复逻辑是为了什么，难道说有可能metadata不是从abd上获取到的？
+		// 从new AnnotationConfigApplicationContext()这条线下来是不会执行这里的，因为metadata是从abd上获取的
+		// abd.getMetadata() == metadata 必然成立。有可能其他地方也会调用本方法，导致两者不一致？
 		else if (abd.getMetadata() != metadata) {
 			lazy = attributesFor(abd.getMetadata(), Lazy.class);
 			if (lazy != null) {
@@ -246,6 +250,7 @@ public abstract class AnnotationConfigUtils {
 			}
 		}
 
+		// 之后就是分别获取Primary、DependsOn、Role、Description注解信息，然后进行设值
 		if (metadata.isAnnotated(Primary.class.getName())) {
 			abd.setPrimary(true);
 		}

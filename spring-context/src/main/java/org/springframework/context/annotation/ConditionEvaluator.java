@@ -82,6 +82,10 @@ class ConditionEvaluator {
 			return false;
 		}
 
+		// 当执行到这里的时候，要么metadata为空，
+		// 要么指定的类型上使用了Conditional注解
+		// （因为我们的metadata也是从指定类型上获取的,metadata用来描述类型上的注解信息）
+
 		if (phase == null) {
 			if (metadata instanceof AnnotationMetadata &&
 					ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata)) {
