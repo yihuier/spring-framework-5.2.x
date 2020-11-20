@@ -219,6 +219,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 	/**
 	 * Derive further bean definitions from the configuration classes in the registry.
+	 * 该方法就是发现配置类中可以被发现的类，然后将其转换成BeanDefinition
 	 */
 	@Override
 	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
@@ -266,6 +267,17 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
+		/**
+		 *  这里从DefaultListableBeanFactory.beanDefinitionMap中获取对应的BeanDefinition
+		 *  我们知道调用new AnnotationConfigApplicationContext的时候，可以有下面三种情况
+		 *  1、不传参，
+		 *  2、传配置类，即使用@Configuration注解的类
+		 *  3、传入普通的组件类，即使用其他Component类型的注解，如@Compoennt、@Service...
+		 *  如果有传参，那么当程序执行到这里的时候，那个（些）被我们传递进来的class对象，都已经转换
+		 *  成了BeanDefinition，所以此处要做的是找出其中的配置类，然后进行相应的组件扫描，将扫描到的
+		 *  组件注册为BeanDefinition；如果没有传递任何配置类进来，那么也就不用做任何的事情了，直接返回
+		 *
+		 */
 		for (String beanName : candidateNames) {
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
@@ -273,6 +285,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
 				}
 			}
+			// 判断当前的BeanDefinition是不是一个配置类的BeanDefinition，即是否使用了@Configuration注解
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
 			}

@@ -53,6 +53,14 @@ final class PostProcessorRegistrationDelegate {
 	}
 
 
+	/**
+	 * 调用BeanFactoryPostProcessor，内部还是有分批次顺序来调用的
+	 * 分为BeanDefinitionRegistryPostProcessor，和其他的BeanFactoryPostProcessor两类
+	 * 然后每一类中还按照下面的顺序进行调用：
+	 * 1、是否实现了PriorityOrdered接口，如果有优先调用
+	 * 2、是否实现了Ordered接口，如果有优先调用
+	 * 3、最后调用其他的没有实现上面两个接口的BeanFactoryPostProcessor
+	 */
 	public static void invokeBeanFactoryPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 
@@ -61,9 +69,13 @@ final class PostProcessorRegistrationDelegate {
 
 		if (beanFactory instanceof BeanDefinitionRegistry) {
 			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+			// 用来保存常规的BeanFactoryPostProcessor
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
+			// 用来保存BeanDefinitionRegisterPostProcessor
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+			// 一般来说如果我们没有手动添加，beanFactoryPostProcessors为空，这里的循环是不会执行的
+			// 用来将beanFactoryPostProcessors中的后置处理器分别加到对应的列表中
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
@@ -93,6 +105,11 @@ final class PostProcessorRegistrationDelegate {
 			}
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 			registryProcessors.addAll(currentRegistryProcessors);
+			/**
+			 * 注意这里调用的BeanFactoryPostProcessor，这里面有一个ConfigurationClassPostProcessor
+			 * 该后置处理器是用来进行组件扫描的，也就是说执行完下面这行代码之后，我们希望被Spring扫描到的类
+			 * 都会被扫描到，并且转换成对应的BeanDefinition
+			 */
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			currentRegistryProcessors.clear();
 
@@ -186,6 +203,15 @@ final class PostProcessorRegistrationDelegate {
 		beanFactory.clearMetadataCache();
 	}
 
+	/**
+	 * 注册BeanPostProcessor，也是分批次来注册的，
+	 * 1、首先是实现了PriorityOrdered的
+	 * 2、其次是实现了Ordered的
+	 * 3、再来是实现了BeanPostProcessors
+	 * 4、最后是重新注册internal BeanPostProcessors（重新注册的目的是，让他们位于列表的最后）
+	 *
+	 * TODO 但是这个internal BeanPostProcessors并不清楚
+	 */
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
 
@@ -247,11 +273,17 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
 
 		// Finally, re-register all internal BeanPostProcessors.
+		// 从上面的逻辑可以知道，internalPostProcessors中的处理器可能会出现在上面三个列表的一个或者多个中，即
+		// priorityOrderedPostProcessors、orderedPostProcessors、nonOrderedPostProcessors
+		// 这里在把它们注册进去，显然已经重复添加了，但是不要紧，registerBeanPostProcessors方法内部
+		// 会先删除已经存在的，然后再添加。不过最终导致的结果是在后置处理器列表中internalPostProcessors中的
+		// 后置处理器会位于其他后置处理器的后面
 		sortPostProcessors(internalPostProcessors, beanFactory);
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,
 		// moving it to the end of the processor chain (for picking up proxies etc).
+		// 这里的重复注册，和上面的internalPostProcessors目的是一样的，让他位于列表的最后
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}
 

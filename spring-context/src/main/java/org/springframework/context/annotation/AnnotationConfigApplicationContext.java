@@ -54,7 +54,7 @@ import org.springframework.util.Assert;
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
 
 	/**
-	 * 用来注册bean
+	 * 用来把一个类转换成一个BeanDefinition对象
 	 */
 	private final AnnotatedBeanDefinitionReader reader;
 

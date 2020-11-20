@@ -1,11 +1,13 @@
 package config;
 
+import config.beans.MyBeanFactoryPostProcessor;
 import config.beans.TestBean;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.AnnotationScopeMetadataResolver;
 import org.springframework.context.annotation.ScopeMetadata;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
@@ -22,7 +24,9 @@ public class Test {
 	}
 
 	public static void test() {
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TestBean.class);
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(BaseConfig.class);
+//		context.addBeanFactoryPostProcessor(new MyBeanFactoryPostProcessor());
+//		context.refresh();
 		TestBean bean = context.getBean(TestBean.class);
 		bean.test();
 	}
