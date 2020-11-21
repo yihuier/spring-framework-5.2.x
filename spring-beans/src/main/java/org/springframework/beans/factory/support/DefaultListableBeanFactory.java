@@ -922,6 +922,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of BeanDefinitionRegistry interface
 	//---------------------------------------------------------------------
 
+	/**
+	 * 细节暂时不去理会，现在要知道的就是，调用这个方法会添加一个BeanDefinition到工厂中
+	 * 分别用beanDefinitionMap和beanDefinitionNames来保存信息
+	 */
 	@Override
 	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 			throws BeanDefinitionStoreException {

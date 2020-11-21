@@ -8,6 +8,6 @@ package config.beans;
 public class BaseBean {
 
 	public BaseBean() {
-		System.out.println("BaseBean 构造器调用");
+//		System.out.println("BaseBean 构造器调用");
 	}
 }

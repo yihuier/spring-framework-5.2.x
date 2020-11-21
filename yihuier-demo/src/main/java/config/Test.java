@@ -1,5 +1,8 @@
 package config;
 
+import config.beans.CustomBeanDefinitionRegistryPostProcessor;
+import config.beans.CustomBeanFactoryPostProcessor;
+import config.beans.CustomBeanPostProcessor;
 import config.beans.MyBeanFactoryPostProcessor;
 import config.beans.TestBean;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
@@ -18,15 +21,15 @@ import org.springframework.core.type.AnnotationMetadata;
 public class Test {
 
 	public static void main(String[] args) {
-		test();
+//		test();
 
 //		AnnotationMetadataTest();
+
+		postProcessorTest();
 	}
 
 	public static void test() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(BaseConfig.class);
-//		context.addBeanFactoryPostProcessor(new MyBeanFactoryPostProcessor());
-//		context.refresh();
 		TestBean bean = context.getBean(TestBean.class);
 		bean.test();
 	}
@@ -40,5 +43,12 @@ public class Test {
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(TestBean.class);
 		ScopeMetadata scopeMetadata = new AnnotationScopeMetadataResolver().resolveScopeMetadata(abd);
 		System.out.println(scopeMetadata.getScopeName());
+	}
+
+	public static void postProcessorTest() {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(BaseConfig.class);
+		context.addBeanFactoryPostProcessor(new CustomBeanDefinitionRegistryPostProcessor());
+		context.addBeanFactoryPostProcessor(new CustomBeanFactoryPostProcessor());
+		context.register(CustomBeanPostProcessor.class);
 	}
 }
