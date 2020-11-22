@@ -562,7 +562,18 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// 注册监听器
 				registerListeners();
 
+				/**
+				 * 执行到这里的时候，Spring上下文中该准备的东西都准备好了，比如获取所有的BeanDefinition并且保存到上下文中
+				 * 把该注册的PostProcessor都注册了，其中一些该调用的回调方法也调用了（比如，BeanFactoryPostProcessor）
+				 * 然后也注册了一下其他的东西（TODO 暂时那些东西干什么的还不清楚，所以含糊过去，哈哈）
+				 *
+				 * 我们可以认为，此时容器的准备工作已经完成，可以开始读取BeanDefinition，然后实例化出一个个Bean了
+				 */
+
 				// Instantiate all remaining (non-lazy-init) singletons.
+				/**
+				 * 创建并初始化non-lazy-init单例bean
+				 */
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -879,6 +890,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
+		// TODO
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(
@@ -888,11 +900,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Register a default embedded value resolver if no bean post-processor
 		// (such as a PropertyPlaceholderConfigurer bean) registered any before:
 		// at this point, primarily for resolution in annotation attribute values.
+		// TODO
 		if (!beanFactory.hasEmbeddedValueResolver()) {
 			beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
 		}
 
 		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		// TODO
 		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
 		for (String weaverAwareName : weaverAwareNames) {
 			getBean(weaverAwareName);
@@ -905,6 +919,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
+		/**
+		 * 实例化，非lazy-init的单例bean
+		 */
 		beanFactory.preInstantiateSingletons();
 	}
 

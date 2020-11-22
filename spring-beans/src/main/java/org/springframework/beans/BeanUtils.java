@@ -201,6 +201,9 @@ public abstract class BeanUtils {
 						argsWithDefaultValues[i] = args[i];
 					}
 				}
+				/**
+				 * 这里就是bean创建的地方，使用java.lang.reflect.Constructor#newInstance(java.lang.Object...)
+				 */
 				return ctor.newInstance(argsWithDefaultValues);
 			}
 		}

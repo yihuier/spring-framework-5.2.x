@@ -312,16 +312,31 @@ final class PostProcessorRegistrationDelegate {
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
 
+		/**
+		 * 此时那些已经被扫描到并且注册成BeanDefinition的BeanPostProcessor的名称都会被获取到
+		 * 当然如果我们自己手动在refresh调用之前注册的BeanPostProcessor也会被获取到
+		 */
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when
 		// a bean is created during BeanPostProcessor instantiation, i.e. when
 		// a bean is not eligible for getting processed by all BeanPostProcessors.
+		/**
+		 * 这里的beanFactory.getBeanPostProcessorCount()中的那几个BeanPostProcessor，有的是在
+		 * AbstractApplicationContext#prepareBeanFactory中注册的，比如
+		 * 1、ApplicationContextAwareProcessor
+		 * 2、ApplicationListenerDetector
+		 */
 		int beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + 1 + postProcessorNames.length;
 		beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));
 
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
+		/**
+		 * 下面就和处理BeanFactoryPostProcessor的逻辑差不多了，根据优先级分组添加到列表中
+		 * 不同的是，这里还会重复添加已经在列表中的BeanFactoryPostProcessor，目的是让他们
+		 * 位置列表的最后。
+		 */
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
 		List<String> orderedPostProcessorNames = new ArrayList<>();
