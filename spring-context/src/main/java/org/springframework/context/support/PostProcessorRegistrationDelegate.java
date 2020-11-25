@@ -87,6 +87,12 @@ final class PostProcessorRegistrationDelegate {
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
 							(BeanDefinitionRegistryPostProcessor) postProcessor;
+					/**
+					 * 这里直接就对我们自定义的手动注册的BeanDefinitionRegistryPostProcessor的回调进行调用
+					 * 而后面才获取Spring内部定义的BeanDefinitionRegistryPostProcessor
+					 * 所以，我们自定义的手动注册的BeanDefinitionRegistryPostProcessor会先于Spring内部定义的
+					 * 执行postProcessBeanDefinitionRegistry回调方法
+					 */
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
 					registryProcessors.add(registryProcessor);
 				}
@@ -105,8 +111,8 @@ final class PostProcessorRegistrationDelegate {
 			/**
 			 * 这个通过类型获取目前所有BeanDefinitionRegistryPostProcessor的名称，
 			 * （
-			 * 		注意此时我们自己定义的BeanDefinitionRegistryPostProcessor，还不会被获取，因此那些类还没有被扫描到
-			 * 		即还没有被注册成BeanDefinition
+			 * 		注意此时我们自己定义的被扫描到的BeanDefinitionRegistryPostProcessor，
+			 * 		还不会被获取，因此那些类还没有被扫描到，即还没有被注册成BeanDefinition
 			 * ）
 			 * 将会获取到一个很重要的BeanDefinitionRegistryPostProcessor的名称，即ConfigurationClassPostProcessor的名称
 			 * "org.springframework.context.annotation.internalConfigurationAnnotationProcessor"

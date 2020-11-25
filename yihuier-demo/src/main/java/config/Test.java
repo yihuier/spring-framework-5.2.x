@@ -1,17 +1,15 @@
 package config;
 
-import config.beans.CustomBeanDefinitionRegistryPostProcessor;
-import config.beans.CustomBeanFactoryPostProcessor;
-import config.beans.CustomBeanPostProcessor;
-import config.beans.MyBeanFactoryPostProcessor;
-import config.beans.TestBean;
-import config.beans.TestBean2;
+import beans.CustomBeanDefinitionRegistryPostProcessor;
+import beans.CustomBeanFactoryPostProcessor;
+import beans.CustomBeanPostProcessor;
+import beans.TestBean;
+import beans.TestBean2;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.AnnotationScopeMetadataResolver;
 import org.springframework.context.annotation.ScopeMetadata;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
@@ -58,6 +56,8 @@ public class Test {
 
 		System.out.println("==================");
 
+		// 当refresh之后，再注册Bean该bean是不会被BeanFactoryPostProcessor处理到的
+		// 因为此时的BeanFactoryPostProcessor已经都执行完回调了
 		context.registerBean(TestBean2.class);
 		System.out.println(context.getBean(TestBean2.class));
 	}
