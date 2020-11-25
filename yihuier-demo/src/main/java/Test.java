@@ -1,10 +1,9 @@
-package config;
-
 import beans.CustomBeanDefinitionRegistryPostProcessor;
 import beans.CustomBeanFactoryPostProcessor;
 import beans.CustomBeanPostProcessor;
 import beans.TestBean;
 import beans.TestBean2;
+import config.BaseConfig;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -20,17 +19,20 @@ import org.springframework.core.type.AnnotationMetadata;
 public class Test {
 
 	public static void main(String[] args) {
-//		test();
+		test();
 
 //		AnnotationMetadataTest();
 
-		postProcessorTest();
+//		postProcessorTest();
 	}
 
 	public static void test() {
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(BaseConfig.class);
-		TestBean bean = context.getBean(TestBean.class);
-		bean.test();
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		context.register(BaseConfig.class);
+		context.register(BaseConfig.class);
+		context.refresh();
+//		TestBean bean = context.getBean(TestBean.class);
+//		bean.test();
 	}
 
 	public static void AnnotationMetadataTest() {

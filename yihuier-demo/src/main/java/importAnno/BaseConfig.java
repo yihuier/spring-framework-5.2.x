@@ -1,17 +1,15 @@
-package config;
+package importAnno;
 
-import beans.TestBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 /**
  *  @author yihuier
- *  @Date 2020/11/18 13:41
+ *  @Date 2020/11/25 9:36
  *  @Description
  */
 @Configuration
-@ComponentScan("beans")
+@ComponentScan
+@MyMapperScan(basePackageClasses = {UserDao.class, ArticleDao.class})
 public class BaseConfig {
-
 }

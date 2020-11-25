@@ -273,7 +273,13 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
+			/**
+			 * 通过findCandidateComponents，找到了BeanDefinition的候选列表
+			 */
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+			/**
+			 * TODO 下面这些处理过程暂时不理解
+			 */
 			for (BeanDefinition candidate : candidates) {
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());

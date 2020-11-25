@@ -74,6 +74,12 @@ abstract class ConfigurationClassUtils {
 
 
 	/**
+	 * 这里判断一个class是不是ConfigurationClass，
+	 * 当满足下面任意一个条件时，就是一个ConfigurationClass
+	 * 1、使用@Configuration注解
+	 * 2、使用@Component/@ComponentScan/@Import/@ImportResource
+	 * 3、存在@Bean注释的方法
+	 *
 	 * Check whether the given bean definition is a candidate for a configuration class
 	 * (or a nested component class declared within a configuration/component class,
 	 * to be auto-registered as well), and mark it accordingly.
@@ -89,6 +95,10 @@ abstract class ConfigurationClassUtils {
 			return false;
 		}
 
+		/**
+		 * 下面是根据BeanDefinition类型的不同，以不同的方式获取AnnotationMetadata
+		 * 具体的细节暂时不去理会
+		 */
 		AnnotationMetadata metadata;
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
@@ -99,6 +109,9 @@ abstract class ConfigurationClassUtils {
 			// Check already loaded Class if present...
 			// since we possibly can't even load the class file for this Class.
 			Class<?> beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
+			/**
+			 * 如果是这些类型的BeanDefinition，不处理直接返回false
+			 */
 			if (BeanFactoryPostProcessor.class.isAssignableFrom(beanClass) ||
 					BeanPostProcessor.class.isAssignableFrom(beanClass) ||
 					AopInfrastructureBean.class.isAssignableFrom(beanClass) ||
@@ -123,9 +136,30 @@ abstract class ConfigurationClassUtils {
 
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
+			/**
+			 * 如果该类使用了@Configuration注解且proxyBeanMethods=true，那么就表示为full
+			 */
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		/**
+		 * 注意，这里是使用 ||，如果当config为空、或者config不为空且proxyBeanMethods为false时，就会去执行isConfigurationCandidate
+		 * 即，两种情况
+		 * 1、没有使用@Configuration
+		 * 2、注解为@Configuration(proxyBeanMethods = false)
+		 * 会去执行isConfigurationCandidate方法
+		 * 而该方法会去判断，该类是否使用了以下注解，只要使用了其中一个，就会返回true
+		 * 1、@Component
+		 * 2、@ComponentScan
+		 * 3、@Import
+		 * 4、@ImportResource
+		 * 或者该类中是否存在@Bean注解的方法，如果存在也会返回true
+		 */
 		else if (config != null || isConfigurationCandidate(metadata)) {
+			/**
+			 * 1、如果该类使用了@Configuration注解，但是proxyBeanMethods=false
+			 * 2、如果该类没有使用@Configuration注解，但是使用了@Component/@ComponentScan/@Import/@ImportResource
+			 * 或者存在@Bean注解的方法，那么就标志为lite
+			 */
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
 		else {

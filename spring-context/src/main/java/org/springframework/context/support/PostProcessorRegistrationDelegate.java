@@ -70,7 +70,7 @@ final class PostProcessorRegistrationDelegate {
 		 * 这个集合可以作为后面去重使用，因为我们知道一个BeanDefinitionRegistryPostProcessor
 		 * 它同时也是一个BeanFactoryPostProcessor。所以，如果我们前面通过BeanDefinitionRegistryPostProcessor.class
 		 * 来获取，和后面再通过BeanFactoryPostProcessor.class，那些BeanDefinitionRegistryPostProcessor
-		 * 就会被获取两边，所有借助这个变量可以用来去掉重复的，其实这里只的是已经调用了相应方法的。
+		 * 就会被获取两遍，所有借助这个变量可以用来去掉重复的，其实这里只的是已经调用了相应方法的。
 		 */
 		Set<String> processedBeans = new HashSet<>();
 
@@ -101,18 +101,27 @@ final class PostProcessorRegistrationDelegate {
 				}
 			}
 
+			/**
+			 * 执行完前面的代码，到这里，已经把我们通过调用addBeanFactoryPostProcessor()添加的BeanFactoryPostProcessor
+			 * 根据类型分别添加到regularPostProcessors和registryProcessors中
+			 */
+
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the bean factory post-processors apply to them!
 			// Separate between BeanDefinitionRegistryPostProcessors that implement
 			// PriorityOrdered, Ordered, and the rest.
+			/**
+			 * 用来保存当前要注册的BeanDefinitionRegistryPostProcessor，什么叫做当前要注册的呢？
+			 * 相对于前面的regularPostProcessors和registryProcessors来说，现在要添加的就是当前要注册的
+			 */
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			/**
-			 * 这个通过类型获取目前所有BeanDefinitionRegistryPostProcessor的名称，
+			 * 这个通过类型获取目前BeanDefinition中的所有BeanDefinitionRegistryPostProcessor的名称，
 			 * （
-			 * 		注意此时我们自己定义的被扫描到的BeanDefinitionRegistryPostProcessor，
-			 * 		还不会被获取，因此那些类还没有被扫描到，即还没有被注册成BeanDefinition
+			 * 		注意此时我们自己定义的可以被扫描到的BeanDefinitionRegistryPostProcessor，
+			 * 		还不会被获取，因此那些类还没有被扫描，即还没有被注册成BeanDefinition
 			 * ）
 			 * 将会获取到一个很重要的BeanDefinitionRegistryPostProcessor的名称，即ConfigurationClassPostProcessor的名称
 			 * "org.springframework.context.annotation.internalConfigurationAnnotationProcessor"
@@ -122,25 +131,36 @@ final class PostProcessorRegistrationDelegate {
 			for (String ppName : postProcessorNames) {
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
 					/**
-					 * 上面获取到名称之后，这里通过BeanFactory#getBean方法将该post-processors实例化
+					 * 上面获取到名称之后，这里通过BeanFactory#getBean方法将该post-processors实例化，
+					 * 然后加到currentRegistryProcessors列表总
 					 */
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
 					processedBeans.add(ppName);
 				}
 			}
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
+			/**
+			 * 这里把现在刚刚注册的BeanDefinitionRegistryPostProcessor加入到registryProcessors
+			 * 所以现在registryProcessors中有我们手动调用addBeanFactoryPostProcessor()添加的以及
+			 * 上面类型获取BeanDefinition，然后实例化而添加的
+			 */
 			registryProcessors.addAll(currentRegistryProcessors);
 
 			/**
+			 * =====================！！！！！！！！！！！===================================
 			 * 注意这里调用上面获取到的BeanDefinitionRegistryPostProcessor的对应方法postProcessBeanDefinitionRegistry，
 			 * 这里面有一个ConfigurationClassPostProcessor，该后置处理器是用来进行组件扫描的，
 			 * 也就是说执行完下面这行代码之后，我们希望被Spring扫描到的类都会被扫描到，并且转换成对应的BeanDefinition
 			 *
-			 * 所以如果我们有自定义的BeanDefinitionRegistryPostProcessor，并且加了@Component之类的注解，能被Spring
-			 * 扫描到，在这里就会被注册成对应的BeanDefinition，后面就会去调用这些我们自定义的BeanFactoryPostProcessor中的方法
+			 * 所以，正如前面注释，前面也有调用过getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class,...)
+			 * 但是还没有办法获取我们自己的BeanDefinitionRegistryPostProcessor，因为它们还不是BeanDefinition，
+			 * 不过当执行完这行代码，我们自定义的BeanDefinitionRegistryPostProcessor（前提是可以被扫描到，即使用@Component之类的注解）
+			 * 在后面调用getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class,...)的时候，就可以被获取到了
+			 * 然后就可以被注册，被调用对应的回调方法
 			 *
 			 * 所以，到此，Spring内部定义的实现了PriorityOrdered接口的BeanDefinitionRegistryPostProcessor
 			 * 将会被调用，而我们自定义的BeanDefinitionRegistryPostProcessor将会放在后面实例化并且调用
+			 * ===================！！！！！！！！！！！！=====================================
 			 */
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			// 每次调用方法完就会清空该列表，避免后面重复调用方法

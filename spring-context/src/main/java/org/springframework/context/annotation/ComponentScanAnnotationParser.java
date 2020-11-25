@@ -74,14 +74,25 @@ class ComponentScanAnnotationParser {
 
 
 	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+		/**
+		 * 这里创建了一个新的ClassPathBeanDefinitionScanner，而不是直接使用在AnnotationConfigApplicationContext默认构造器中
+		 * 创建的那个，那个扫描器一般是让我们需要手动扫描的时候使用的，当然这里不使用已经创建了的那个扫描器的原因可能是
+		 * 这里需要考虑到其他的参数，比如说@componentScan中的useDefaultFilters
+		 */
 		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
 				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
+		/**
+		 * 这里对@componentScan中的nameGenerator进行处理
+		 */
 		Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
 		boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
 		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
 				BeanUtils.instantiateClass(generatorClass));
 
+		/**
+		 * 这里对@componentScan中的scopedProxy进行处理
+		 */
 		ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
 		if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
 			scanner.setScopedProxyMode(scopedProxyMode);
@@ -91,8 +102,14 @@ class ComponentScanAnnotationParser {
 			scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
 		}
 
+		/**
+		 * 这里对@componentScan中的resourcePattern进行处理
+		 */
 		scanner.setResourcePattern(componentScan.getString("resourcePattern"));
 
+		/**
+		 * 这里对@componentScan中的includeFilters和excludeFilters进行处理
+		 */
 		for (AnnotationAttributes filter : componentScan.getAnnotationArray("includeFilters")) {
 			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
 				scanner.addIncludeFilter(typeFilter);
@@ -104,11 +121,17 @@ class ComponentScanAnnotationParser {
 			}
 		}
 
+		/**
+		 * 这里对@componentScan中的lazyInit进行处理
+		 */
 		boolean lazyInit = componentScan.getBoolean("lazyInit");
 		if (lazyInit) {
 			scanner.getBeanDefinitionDefaults().setLazyInit(true);
 		}
 
+		/**
+		 * 这里对@componentScan中的basePackages和basePackageClasses进行处理
+		 */
 		Set<String> basePackages = new LinkedHashSet<>();
 		String[] basePackagesArray = componentScan.getStringArray("basePackages");
 		for (String pkg : basePackagesArray) {
@@ -123,12 +146,19 @@ class ComponentScanAnnotationParser {
 			basePackages.add(ClassUtils.getPackageName(declaringClass));
 		}
 
+		/**
+		 * 这里还加了一个暂时看不懂的excludeFilter
+		 */
 		scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
 			@Override
 			protected boolean matchClassName(String className) {
 				return declaringClass.equals(className);
 			}
 		});
+
+		/**
+		 * 然后开始进行扫描
+		 */
 		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 
