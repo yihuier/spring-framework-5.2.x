@@ -2,6 +2,7 @@ package config.beans;
 
 import beans.TestBean;
 import config.BaseConfig;
+
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.*;

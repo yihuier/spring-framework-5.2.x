@@ -250,6 +250,9 @@ class ConfigurationClassParser {
 		// Recursively process the configuration class and its superclass hierarchy.
 		SourceClass sourceClass = asSourceClass(configClass, filter);
 		do {
+			/**
+			 * 这个才是真正的处理配置类的方法
+			 */
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);
 		}
 		while (sourceClass != null);
@@ -270,11 +273,18 @@ class ConfigurationClassParser {
 			ConfigurationClass configClass, SourceClass sourceClass, Predicate<String> filter)
 			throws IOException {
 
+		/**
+		 * 如果加了@Component注解，那么就先递归处理内部类
+		 * TODO 不懂
+		 */
 		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
 			// Recursively process any member (nested) classes first
 			processMemberClasses(configClass, sourceClass, filter);
 		}
 
+		/**
+		 * TODO 不懂哇
+		 */
 		// Process any @PropertySource annotations
 		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), PropertySources.class,
@@ -290,7 +300,7 @@ class ConfigurationClassParser {
 
 		// Process any @ComponentScan annotations
 		/**
-		 * 这里暂时不理解AnnotationConfigUtils.attributesForRepeatable
+		 * TODO 这里暂时不理解AnnotationConfigUtils.attributesForRepeatable
 		 */
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
@@ -299,8 +309,10 @@ class ConfigurationClassParser {
 			for (AnnotationAttributes componentScan : componentScans) {
 				// The config class is annotated with @ComponentScan -> perform the scan immediately
 				/**
+				 * =====================================================================================
 				 * 这里是对@ComponentScan中各个attribute进行处理，其实就是执行@ComponentScan的功能，即进行扫描
 				 * 然后返回扫描到的BeanDefinition
+				 * =====================================================================================
 				 */
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
@@ -316,6 +328,9 @@ class ConfigurationClassParser {
 					 * 1、使用@Configuration注解
 					 * 2、使用@Component/@ComponentScan/@Import/@ImportResource
 					 * 3、存在@Bean注释的方法
+					 *
+					 * 如果当前的BeanDefinition是一个配置类，就对这个配置类进行解析,
+					 * 所以这里是对扫描出来的BeanDefinition中的配置类进行解析
 					 */
 					if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
 						parse(bdCand.getBeanClassName(), holder.getBeanName());
@@ -325,7 +340,17 @@ class ConfigurationClassParser {
 		}
 
 		// Process any @Import annotations
+		/**
+		 * 这里对@Import注解进行处理
+		 */
 		processImports(configClass, sourceClass, getImports(sourceClass), filter, true);
+
+
+		/**
+		 * ==================================================================
+		 * TODO 暂时看到这里，下面的以后再看
+		 * ==================================================================
+		 */
 
 		// Process any @ImportResource annotations
 		AnnotationAttributes importResource =
@@ -591,6 +616,9 @@ class ConfigurationClassParser {
 					if (candidate.isAssignable(ImportSelector.class)) {
 						// Candidate class is an ImportSelector -> delegate to it to determine imports
 						Class<?> candidateClass = candidate.loadClass();
+						/**
+						 * 根据获取到的类名创建一个ImportSelector实例
+						 */
 						ImportSelector selector = ParserStrategyUtils.instantiateClass(candidateClass, ImportSelector.class,
 								this.environment, this.resourceLoader, this.registry);
 						Predicate<String> selectorFilter = selector.getExclusionFilter();
@@ -601,8 +629,14 @@ class ConfigurationClassParser {
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
 						else {
+							/**
+							 * 这里调用ImportSelector的selectImports方法
+							 */
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
 							Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames, exclusionFilter);
+							/**
+							 * 这里递归调用处理ImportSelector中再使用了@Import
+							 */
 							processImports(configClass, currentSourceClass, importSourceClasses, exclusionFilter, false);
 						}
 					}
@@ -613,6 +647,11 @@ class ConfigurationClassParser {
 						ImportBeanDefinitionRegistrar registrar =
 								ParserStrategyUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class,
 										this.environment, this.resourceLoader, this.registry);
+						/**
+						 * 这里好像没有直接执行ImportBeanDefinitionRegistrar中的方法
+						 * 是委托到哪里取执行了吗
+						 * TODO
+						 */
 						configClass.addImportBeanDefinitionRegistrar(registrar, currentSourceClass.getMetadata());
 					}
 					else {
@@ -620,6 +659,10 @@ class ConfigurationClassParser {
 						// process it as an @Configuration class
 						this.importStack.registerImport(
 								currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
+						/**
+						 * 如果@Import中的类不是一个ImportSelector或者ImportBeanDefinitionRegistrar
+						 * 那么把它当做一个配置类来处理
+						 */
 						processConfigurationClass(candidate.asConfigClass(configClass), exclusionFilter);
 					}
 				}

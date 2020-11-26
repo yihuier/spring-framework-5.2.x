@@ -67,10 +67,10 @@ final class PostProcessorRegistrationDelegate {
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
 		/**
 		 * 可能需要结合后面的再来理解这个变量的作用
-		 * 这个集合可以作为后面去重使用，因为我们知道一个BeanDefinitionRegistryPostProcessor
+		 * 这个集合可以作为后面去重使用，比如，我们知道一个BeanDefinitionRegistryPostProcessor
 		 * 它同时也是一个BeanFactoryPostProcessor。所以，如果我们前面通过BeanDefinitionRegistryPostProcessor.class
 		 * 来获取，和后面再通过BeanFactoryPostProcessor.class，那些BeanDefinitionRegistryPostProcessor
-		 * 就会被获取两遍，所有借助这个变量可以用来去掉重复的，其实这里只的是已经调用了相应方法的。
+		 * 就会被获取两遍，所有借助这个变量可以用来去掉重复的，其实这里指的是已经调用了相应方法的。
 		 */
 		Set<String> processedBeans = new HashSet<>();
 
@@ -88,9 +88,16 @@ final class PostProcessorRegistrationDelegate {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
 							(BeanDefinitionRegistryPostProcessor) postProcessor;
 					/**
-					 * 这里直接就对我们自定义的手动注册的BeanDefinitionRegistryPostProcessor的回调进行调用
+					 * ******************************************************************
+					 * 					BeanFactoryPostProcessor的第一次调用
+					 * 类型为：BeanDefinitionRegistryPostProcessor
+					 * 被调用的方法为：postProcessBeanDefinitionRegistry
+					 * 对象为：我们手动注册的，即调用addBeanFactoryPostProcessor方法注册的对象
+					 * ******************************************************************
+					 *
+					 * 这里直接就对我们手动注册的BeanDefinitionRegistryPostProcessor的回调进行调用
 					 * 而后面才获取Spring内部定义的BeanDefinitionRegistryPostProcessor
-					 * 所以，我们自定义的手动注册的BeanDefinitionRegistryPostProcessor会先于Spring内部定义的
+					 * 所以，我们手动注册的BeanDefinitionRegistryPostProcessor会先于Spring内部定义的
 					 * 执行postProcessBeanDefinitionRegistry回调方法
 					 */
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
@@ -102,7 +109,7 @@ final class PostProcessorRegistrationDelegate {
 			}
 
 			/**
-			 * 执行完前面的代码，到这里，已经把我们通过调用addBeanFactoryPostProcessor()添加的BeanFactoryPostProcessor
+			 * 执行完前面的代码，到这里，已经把我们通过addBeanFactoryPostProcessor()手动添加的BeanFactoryPostProcessor
 			 * 根据类型分别添加到regularPostProcessors和registryProcessors中
 			 */
 
@@ -112,7 +119,7 @@ final class PostProcessorRegistrationDelegate {
 			// PriorityOrdered, Ordered, and the rest.
 			/**
 			 * 用来保存当前要注册的BeanDefinitionRegistryPostProcessor，什么叫做当前要注册的呢？
-			 * 相对于前面的regularPostProcessors和registryProcessors来说，现在要添加的就是当前要注册的
+			 * 说白了，就是还没有实例化出来的，现在要把它们给实例化了
 			 */
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
@@ -120,7 +127,7 @@ final class PostProcessorRegistrationDelegate {
 			/**
 			 * 这个通过类型获取目前BeanDefinition中的所有BeanDefinitionRegistryPostProcessor的名称，
 			 * （
-			 * 		注意此时我们自己定义的可以被扫描到的BeanDefinitionRegistryPostProcessor，
+			 * 		注意此时我们自己定义的可以被扫描到的BeanDefinitionRegistryPostProcessor（如使用了@Component的），
 			 * 		还不会被获取，因此那些类还没有被扫描，即还没有被注册成BeanDefinition
 			 * ）
 			 * 将会获取到一个很重要的BeanDefinitionRegistryPostProcessor的名称，即ConfigurationClassPostProcessor的名称
@@ -132,7 +139,7 @@ final class PostProcessorRegistrationDelegate {
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
 					/**
 					 * 上面获取到名称之后，这里通过BeanFactory#getBean方法将该post-processors实例化，
-					 * 然后加到currentRegistryProcessors列表总
+					 * 然后加到currentRegistryProcessors列表中
 					 */
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
 					processedBeans.add(ppName);
@@ -142,11 +149,20 @@ final class PostProcessorRegistrationDelegate {
 			/**
 			 * 这里把现在刚刚注册的BeanDefinitionRegistryPostProcessor加入到registryProcessors
 			 * 所以现在registryProcessors中有我们手动调用addBeanFactoryPostProcessor()添加的以及
-			 * 上面类型获取BeanDefinition，然后实例化而添加的
+			 * 上面刚刚添加的
 			 */
 			registryProcessors.addAll(currentRegistryProcessors);
 
 			/**
+			 * ***************************************************************************
+			 * 					 BeanFactoryPostProcessor的第二次调用
+			 * 	类型为：BeanDefinitionRegistryPostProcessor & PriorityOrdered
+			 * 	被调用的方法为：postProcessBeanDefinitionRegistry
+			 * 	对象为：目前已经存在的BeanDefinition中的满足条件的对象
+			 *
+			 * 	注意！！！ConfigurationClassPostProcessor就是在这个地方被调用的
+			 * ***************************************************************************
+			 *
 			 * =====================！！！！！！！！！！！===================================
 			 * 注意这里调用上面获取到的BeanDefinitionRegistryPostProcessor的对应方法postProcessBeanDefinitionRegistry，
 			 * 这里面有一个ConfigurationClassPostProcessor，该后置处理器是用来进行组件扫描的，
@@ -175,7 +191,8 @@ final class PostProcessorRegistrationDelegate {
 			postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			for (String ppName : postProcessorNames) {
 				/**
-				 * 这里有个疑问，如果我们的自定义BeanDefinitionRegistryPostProcessor实现了PriorityOrdered接口
+				 * 这里有个疑问，因为PriorityOrdered是Ordered的子类，所以
+				 * 如果我们的自定义BeanDefinitionRegistryPostProcessor实现了PriorityOrdered接口
 				 * 那么当我们的自定义BeanDefinitionRegistryPostProcessor中同时存在实现了PriorityOrdered接口的
 				 * 和实现了Ordered接口的，都会被到加入到下面的列表中，此时，是不是有可能出现顺序问题？（已解决，详见后面注释）
 				 */
@@ -195,7 +212,18 @@ final class PostProcessorRegistrationDelegate {
 			 */
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 			registryProcessors.addAll(currentRegistryProcessors);
+
 			/**
+			 * ***************************************************************************
+			 * 					 BeanFactoryPostProcessor的第三次调用
+			 * 	类型为：BeanDefinitionRegistryPostProcessor & Ordered
+			 * 	被调用的方法为：postProcessBeanDefinitionRegistry
+			 * 	对象为：目前已经存在的BeanDefinition中的满足条件的对象
+			 *
+			 *  注意，前面已经调用过对应方法的对象不会在被调用了，因为会利用processedBeans把它们过滤掉
+			 *  使它们不加入到currentRegistryProcessors列表中（下同）
+			 * ***************************************************************************
+			 *
 			 * 到此，我们自定义的以及Spring内部的实现了Ordered接口的BeanDefinitionRegistryPostProcessor
 			 * 都会被实例化并且调用
 			 */
@@ -217,6 +245,14 @@ final class PostProcessorRegistrationDelegate {
 				sortPostProcessors(currentRegistryProcessors, beanFactory);
 				registryProcessors.addAll(currentRegistryProcessors);
 				/**
+				 * ***************************************************************************
+				 * 					 BeanFactoryPostProcessor的第四次调用
+				 * 	类型为：BeanDefinitionRegistryPostProcessor
+				 * 	被调用的方法为：postProcessBeanDefinitionRegistry
+				 * 	对象为：目前已经存在的BeanDefinition中的满足条件的对象
+				 *
+				 * ***************************************************************************
+				 *
 				 * 到此，我们自定义的以及Spring内部的其他BeanDefinitionRegistryPostProcessor都会被实例化并且调用
 				 */
 				invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
@@ -225,11 +261,29 @@ final class PostProcessorRegistrationDelegate {
 
 			// Now, invoke the postProcessBeanFactory callback of all processors handled so far.
 			/**
+			 * ***************************************************************************
+			 * 					 BeanFactoryPostProcessor的第五次调用
+			 * 	类型为：BeanDefinitionRegistryPostProcessor
+			 * 	被调用的方法为：postProcessBeanFactory
+			 * 	对象为：前面的所有BeanDefinitionRegistryPostProcessor
+			 *
+			 * ***************************************************************************
+			 *
 			 * 由于一个BeanDefinitionRegistryPostProcessor同时也是一个BeanFactoryPostProcessor，
 			 * 所以在上面调用了BeanDefinitionRegistryPostProcessor接口中定义的postProcessBeanDefinitionRegistry方法之后
 			 * 这里开始调用BeanFactoryPostProcessor接口中定义的postProcessBeanFactory方法
 			 */
 			invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
+
+			/**
+			 * ***************************************************************************
+			 * 					 BeanFactoryPostProcessor的第六次调用
+			 * 	类型为：BeanFactoryPostProcessor
+			 * 	被调用的方法为：postProcessBeanFactory
+			 * 	对象为：我们手动注册的BeanFactoryPostProcessor
+			 *
+			 * ***************************************************************************
+			 */
 			invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
 
 			/**
@@ -238,6 +292,7 @@ final class PostProcessorRegistrationDelegate {
 			 * BeanDefinitionRegistryPostProcessor，都已经被实例化并且调用了相应的方法，
 			 * 即BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry
 			 * 和BeanFactoryPostProcessor#postProcessBeanFactory
+			 * 以及我们手动注册的BeanFactoryPostProcessor的对应方法也被执行了
 			 * ================================================================================
 			 */
 		}
@@ -251,7 +306,7 @@ final class PostProcessorRegistrationDelegate {
 		// uninitialized to let the bean factory post-processors apply to them!
 		/**
 		 * 这里通过类型获取目前所有BeanFactoryPostProcessor的名称，就会获取到前面由ConfigurationClassPostProcessor
-		 * 扫描并注册的BeanFactoryPostProcessor BeanDefinition的名称
+		 * 扫描并注册的BeanFactoryPostProcessor对应的BeanDefinition的名称
 		 */
 		String[] postProcessorNames =
 				beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
@@ -271,7 +326,7 @@ final class PostProcessorRegistrationDelegate {
 			/**
 			 * beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, ...)这个方法必然会获取到
 			 * 前面已经处理完毕的那些BeanDefinitionRegistryPostProcessor，所有我们需要过滤掉那些，
-			 * 此时processedBeans这个变量的作用之一就体现出来了：只要是前面处理过的，在这里我就不再做处理
+			 * 此时processedBeans这个变量的作用之一就体现出来了：只要是前面处理过的，在这里就不再做处理
 			 */
 			if (processedBeans.contains(ppName)) {
 				// skip - already processed in first phase above
@@ -291,7 +346,17 @@ final class PostProcessorRegistrationDelegate {
 
 		// First, invoke the BeanFactoryPostProcessors that implement PriorityOrdered.
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
-		// 执行到这里的时候，已经注册成BeanDefinition的BeanFactoryPostProcessor中那些实现了PriorityOrdered接口的将会被调用相应方法
+
+		/**
+		 * ***************************************************************************
+		 * 					 BeanFactoryPostProcessor的第七次调用
+		 * 	类型为：BeanFactoryPostProcessor & PriorityOrdered
+		 * 	被调用的方法为：postProcessBeanFactory
+		 * 	对象为：目前已经存在的BeanDefinition中的满足条件的对象
+		 *
+		 *  注意，和上面一样，已经处理过的这里不会再被调用，下面的也一样
+		 * ***************************************************************************
+		 */
 		invokeBeanFactoryPostProcessors(priorityOrderedPostProcessors, beanFactory);
 
 		// Next, invoke the BeanFactoryPostProcessors that implement Ordered.
@@ -301,7 +366,16 @@ final class PostProcessorRegistrationDelegate {
 			orderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
 		}
 		sortPostProcessors(orderedPostProcessors, beanFactory);
-		// 执行到这里，已经注册成BeanDefinition的BeanFactoryPostProcessor中那些实现了Ordered接口的将会被调用相应的方法
+
+		/**
+		 * ***************************************************************************
+		 * 					 BeanFactoryPostProcessor的第八次调用
+		 * 	类型为：BeanFactoryPostProcessor & Ordered
+		 * 	被调用的方法为：postProcessBeanFactory
+		 * 	对象为：目前已经存在的BeanDefinition中的满足条件的对象
+		 *
+		 * ***************************************************************************
+		 */
 		invokeBeanFactoryPostProcessors(orderedPostProcessors, beanFactory);
 
 		// Finally, invoke all other BeanFactoryPostProcessors.
@@ -310,7 +384,16 @@ final class PostProcessorRegistrationDelegate {
 			// 同上，通过beanFactory.getBean获取一个BeanFactoryPostProcessor的实例，如果还没有则去创建一个返回
 			nonOrderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
 		}
-		// 执行到这里，已经注册成BeanDefinition的BeanFactoryPostProcessor中那些没有实现上述两个接口的其他对象将会被调用相应的方法
+
+		/**
+		 * ***************************************************************************
+		 * 					 BeanFactoryPostProcessor的第九次调用
+		 * 	类型为：BeanFactoryPostProcessor
+		 * 	被调用的方法为：postProcessBeanFactory
+		 * 	对象为：目前已经存在的BeanDefinition中的满足条件的对象
+		 *
+		 * ***************************************************************************
+		 */
 		invokeBeanFactoryPostProcessors(nonOrderedPostProcessors, beanFactory);
 
 		/**

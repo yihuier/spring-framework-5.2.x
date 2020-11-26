@@ -264,6 +264,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 * {@link Configuration} classes.
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+		/**
+		 * 该变量用来保存配置类的BeanDefinition
+		 */
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
@@ -284,7 +287,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			 * ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE这个属性会在
 			 * ConfigurationClassUtils.checkConfigurationClassCandidate判断一个BeanDefinition是否是
 			 * 一个配置类的BeanDefinition的时候进行标识，所有如果有了这个标识，说明已经进行处理过了
-			 * 已经知道了他是不是一个配置类的BeanDefinition
+			 * 即，已经知道了他是不是一个配置类的BeanDefinition
 			 */
 			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
 				if (logger.isDebugEnabled()) {
@@ -302,6 +305,10 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
 			}
 		}
+
+		/**
+		 * 到此时，已经将BeanDefinition中是配置类的给找了出来，放到了configCandidates中
+		 */
 
 		// Return immediately if no @Configuration classes were found
 		if (configCandidates.isEmpty()) {

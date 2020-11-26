@@ -536,7 +536,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Invoke factory processors registered as beans in the context.
 				/**
-				 * 调用BeanFactoryPostProcessor，注意，这里面可能已经进行了组件扫描（如果条件满足的话）
+				 * 调用BeanFactoryPostProcessor，注意，这里面已经进行了组件扫描（如果条件满足的话）
 				 * 所以，当执行完下面这行代码之后，那些我们希望被Spring扫描到的类，
 				 * 都会被扫描到然后注册成BeanDefinition。
 				 */
