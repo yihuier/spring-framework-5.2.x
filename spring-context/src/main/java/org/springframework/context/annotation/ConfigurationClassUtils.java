@@ -80,6 +80,12 @@ abstract class ConfigurationClassUtils {
 	 * 2、使用@Component/@ComponentScan/@Import/@ImportResource
 	 * 3、存在@Bean注释的方法
 	 *
+	 * 但是如果使用@Configuration和没使用的配置类有点不同，
+	 * 使用@Configuration注解的BeanDefinition会被标志为full
+	 * 其他的配置类的BeanDefinition则会被标志为lite
+	 * 这两个标志会在ConfigurationClassPostProcessor#enhanceConfigurationClasses方法中
+	 * 被使用到，而这关系到配置类会不会被使用CGLIB代理
+	 *
 	 * Check whether the given bean definition is a candidate for a configuration class
 	 * (or a nested component class declared within a configuration/component class,
 	 * to be auto-registered as well), and mark it accordingly.

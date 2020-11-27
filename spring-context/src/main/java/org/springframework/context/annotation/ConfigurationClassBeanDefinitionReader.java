@@ -137,6 +137,11 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+
+		/**
+		 * 使用@Import注解，导入的类型不是ImportBeanDefinitionRegistrar和ImportSelector的其他类型
+		 * 将会在这里被注册成BeanDefinition
+		 */
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
@@ -145,6 +150,10 @@ class ConfigurationClassBeanDefinitionReader {
 		}
 
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+
+		/**
+		 * 使用@Import导入的类型为ImportBeanDefinitionRegistrar时，调用对应的方法
+		 */
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
@@ -380,6 +389,9 @@ class ConfigurationClassBeanDefinitionReader {
 	}
 
 	private void loadBeanDefinitionsFromRegistrars(Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> registrars) {
+		/**
+		 * 使用@Import导入的类型为ImportBeanDefinitionRegistrar时，ImportBeanDefinitionRegistrar实现类被调用的地方
+		 */
 		registrars.forEach((registrar, metadata) ->
 				registrar.registerBeanDefinitions(metadata, this.registry, this.importBeanNameGenerator));
 	}

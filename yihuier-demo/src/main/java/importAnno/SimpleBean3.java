@@ -15,8 +15,8 @@ public class SimpleBean3 {
 	 * 注解@Bean并不一定要作用在@Configuration注解的类中
 	 * @return
 	 */
-	@Bean
-	public SimpleBean simpleBean() {
-		return new SimpleBean();
-	}
+//	@Bean
+//	public SimpleBean simpleBean() {
+//		return new SimpleBean();
+//	}
 }

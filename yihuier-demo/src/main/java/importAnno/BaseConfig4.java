@@ -9,6 +9,6 @@ import org.springframework.context.annotation.Import;
  *  @Description
  */
 @Configuration
-@Import(BaseConfig3.class)
+@Import(SimpleBean4.class)
 public class BaseConfig4 {
 }

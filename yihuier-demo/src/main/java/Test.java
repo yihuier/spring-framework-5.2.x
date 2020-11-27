@@ -28,7 +28,6 @@ public class Test {
 
 	public static void test() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(BaseConfig.class);
-		context.refresh();
 //		TestBean bean = context.getBean(TestBean.class);
 //		bean.test();
 	}

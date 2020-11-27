@@ -268,6 +268,11 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		 * 该变量用来保存配置类的BeanDefinition
 		 */
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+		/**
+		 * 这里获取当前的BeanDefinition名称，一般来说如果是通过AnnotationConfigApplicationContext创建的上下文
+		 * 此处能够获取到的有Spring内部自定的BeanDefinition，以及我们自己作为构造参数加入的Class或者调用register
+		 * 添加的Class的BeanDefinition
+		 */
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		/**
@@ -341,6 +346,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// Parse each @Configuration class
+		/**
+		 * 下面开始对目前找到的每一个配置类BeanDefinition进行解析
+		 */
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
@@ -348,9 +356,15 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
+			/**
+			 * 这里对配置类进行解析，
+			 */
 			parser.parse(candidates);
 			parser.validate();
 
+			/**
+			 * 前面在parser.parse(candidates);方法中存入configurationClasses的配置类信息取出来
+			 */
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
 			configClasses.removeAll(alreadyParsed);
 
@@ -360,6 +374,11 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			/**
+			 * =========================================================
+			 * 这里可以将想要通过@Import注册成BeanDefinition的类注册成BeanDefinition
+			 * =========================================================
+			 */
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 

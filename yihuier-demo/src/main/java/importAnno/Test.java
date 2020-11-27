@@ -16,11 +16,11 @@ public class Test {
 
 //		importSelectorTest();
 
-//		importOtherTest();
+		importOtherTest();
 
 //		test();
 
-		componentScanTest();
+//		componentScanTest();
 	}
 
 	public static void importBeanDefinitionRegistrarTest() {

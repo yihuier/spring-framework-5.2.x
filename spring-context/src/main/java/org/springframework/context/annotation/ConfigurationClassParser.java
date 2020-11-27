@@ -171,7 +171,7 @@ class ConfigurationClassParser {
 		for (BeanDefinitionHolder holder : configCandidates) {
 			BeanDefinition bd = holder.getBeanDefinition();
 			/**
-			 * 这里根据不同的BeanDefinition类型调用不同的解析方法
+			 * 这里根据不同的BeanDefinition类型调用不同的解析方法，一次处理一个配置类
 			 */
 			try {
 				if (bd instanceof AnnotatedBeanDefinition) {
@@ -193,6 +193,7 @@ class ConfigurationClassParser {
 			}
 		}
 
+		// TODO 暂时不清楚
 		this.deferredImportSelectorHandler.process();
 	}
 
@@ -231,6 +232,10 @@ class ConfigurationClassParser {
 		}
 
 		ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+		/**
+		 * TODO
+		 * 这里是解决相互import的问题吗？
+		 */
 		if (existingClass != null) {
 			if (configClass.isImported()) {
 				if (existingClass.isImported()) {
@@ -257,6 +262,16 @@ class ConfigurationClassParser {
 		}
 		while (sourceClass != null);
 
+		/**
+		 * ========================================================
+		 *  这里当前处理完成的配置类放到configurationClasses变量中，
+		 *  后面会通过这个变量进行BeanDefinition的注册
+		 *  由于doProcessConfigurationClass中再处理@Import注解的时候
+		 *  会将非ImportSelector和ImportDefinitionRegistrar的类当做配置类
+		 *  并且调用当前方法，即processConfigurationClass
+		 *  所以那些类也会被放到这个变量当中
+		 * ========================================================
+		 */
 		this.configurationClasses.put(configClass, configClass);
 	}
 
@@ -300,7 +315,7 @@ class ConfigurationClassParser {
 
 		// Process any @ComponentScan annotations
 		/**
-		 * TODO 这里暂时不理解AnnotationConfigUtils.attributesForRepeatable
+		 * 这里将会获取@ComponentScan中的属性
 		 */
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
@@ -311,7 +326,8 @@ class ConfigurationClassParser {
 				/**
 				 * =====================================================================================
 				 * 这里是对@ComponentScan中各个attribute进行处理，其实就是执行@ComponentScan的功能，即进行扫描
-				 * 然后返回扫描到的BeanDefinition
+				 * 然后返回扫描到的BeanDefinition，需要注意的是，不仅仅是扫描出来，也进行了注册
+				 * 也就是说，此时，被扫描出来的BeanDefinition也已经完成了注册
 				 * =====================================================================================
 				 */
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
@@ -344,13 +360,6 @@ class ConfigurationClassParser {
 		 * 这里对@Import注解进行处理
 		 */
 		processImports(configClass, sourceClass, getImports(sourceClass), filter, true);
-
-
-		/**
-		 * ==================================================================
-		 * TODO 暂时看到这里，下面的以后再看
-		 * ==================================================================
-		 */
 
 		// Process any @ImportResource annotations
 		AnnotationAttributes importResource =
@@ -630,12 +639,24 @@ class ConfigurationClassParser {
 						}
 						else {
 							/**
-							 * 这里调用ImportSelector的selectImports方法
+							 * ==========================================================================
+							 * 				ImportSelector#selectImports调用的地方
+							 * 这里调用ImportSelector的selectImports方法，将会返回需要注册成BeanDefinition的类名
+							 * 就是selectImports返回的字符串数组
+							 * ==========================================================================
 							 */
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
+							/**
+							 * ImportSelector#selectImports会返回一个字符串数组，通过className获取对应的SourceClass
+							 */
 							Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames, exclusionFilter);
 							/**
-							 * 这里递归调用处理ImportSelector中再使用了@Import
+							 * 这里递归调用处理通过ImportSelector中注册的BeanDefinition中那些还是ImportSelector的类
+							 * 如：
+							 * @Import(A.class) // A是一个ImportSelector
+							 * 在A中的selectImports返回，字符串数组 { "B.class" } // B又是一个ImportSelector
+							 *
+							 * 这样递归调用可以保证所有的ImportSelector都会被执行到
 							 */
 							processImports(configClass, currentSourceClass, importSourceClasses, exclusionFilter, false);
 						}
@@ -661,7 +682,11 @@ class ConfigurationClassParser {
 								currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
 						/**
 						 * 如果@Import中的类不是一个ImportSelector或者ImportBeanDefinitionRegistrar
-						 * 那么把它当做一个配置类来处理
+						 * 那么把它当做一个配置类来处理，
+						 * 调用这个方法将会导致当前类被放到ConfigurationClassParser#configurationClasses变量当中
+						 * 而这个变量后面会被用来进行BeanDefinition的注册，所以ImportSelector中要注册的
+						 * 类将会在那个时候被注册成BeanDefinition
+						 * （不包括ImportSelector实现类和ImportBeanDefinitionRegistrar实现类，因为它们在上面的两个if中处理了）
 						 */
 						processConfigurationClass(candidate.asConfigClass(configClass), exclusionFilter);
 					}
