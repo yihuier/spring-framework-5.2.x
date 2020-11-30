@@ -327,7 +327,7 @@ class ConfigurationClassParser {
 				 * =====================================================================================
 				 * 这里是对@ComponentScan中各个attribute进行处理，其实就是执行@ComponentScan的功能，即进行扫描
 				 * 然后返回扫描到的BeanDefinition，需要注意的是，不仅仅是扫描出来，也进行了注册
-				 * 也就是说，此时，被扫描出来的BeanDefinition也已经完成了注册
+				 * 也就是说，此时，被扫描出来的Class已经注册成了BeanDefinition
 				 * =====================================================================================
 				 */
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =

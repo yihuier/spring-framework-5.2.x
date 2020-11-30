@@ -54,12 +54,12 @@ import org.springframework.util.Assert;
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
 
 	/**
-	 * 用来把一个类转换成一个BeanDefinition对象
+	 * 用来注册BeanDefinition
 	 */
 	private final AnnotatedBeanDefinitionReader reader;
 
 	/**
-	 * 用来扫描classpath中的bean，也可以用来注册beanDefinition
+	 * 用来扫描classPath中的类并把符合要求的注册成BeanDefinition
 	 */
 	private final ClassPathBeanDefinitionScanner scanner;
 
@@ -100,6 +100,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		this();
 		// register内部就是使用上面创建的reader去注册componentClasses的
 		register(componentClasses);
+		// 接下来的所有操作，包括容器的初始化，后置处理器的处理，bean的扫描和注册等等
 		refresh();
 	}
 
