@@ -1619,6 +1619,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Boolean result = mbd.isFactoryBean;
 		if (result == null) {
 			Class<?> beanType = predictBeanType(beanName, mbd, FactoryBean.class);
+
+			/**
+			 * 在这里判断一个Bean是不是FactoryBean
+			 */
 			result = (beanType != null && FactoryBean.class.isAssignableFrom(beanType));
 			mbd.isFactoryBean = result;
 		}
